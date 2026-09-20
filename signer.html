@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14265C">
+<meta name="robots" content="noindex, nofollow">
+<title>Signature — BlueWavea</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#EDF4F9;font-family:'Public Sans',system-ui,sans-serif;color:#14265C;-webkit-text-size-adjust:100%}
+  a{color:#2F7DD1}
+  .wrap{max-width:820px;margin:0 auto;padding:0 0 48px}
+  header{background:#14265C;color:#fff;padding:18px 20px;display:flex;align-items:center;gap:12px}
+  header img{width:38px;height:38px;object-fit:contain;flex-shrink:0}
+  header .n{font-size:17px;font-weight:800;letter-spacing:.3px}
+  header .s{font-size:11.5px;opacity:.82;font-style:italic;margin-top:1px}
+  .box{background:#fff;border-radius:16px;margin:16px;padding:20px}
+  .t{font-size:18px;font-weight:800}
+  .st{font-size:13px;color:#5B6B94;margin-top:4px;line-height:1.55}
+  .doc{margin:16px;border-radius:16px;overflow:hidden;background:#fff}
+  .doc iframe{display:block;width:100%;border:0;background:#fff}
+  .lab{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#2F7DD1;margin-bottom:9px}
+  .chk{display:flex;gap:11px;align-items:flex-start;background:#F4F9FD;border:1px solid #D9E7F4;border-radius:12px;padding:13px 14px;cursor:pointer}
+  .chk input{width:20px;height:20px;flex-shrink:0;margin-top:1px;accent-color:#1F8A5B}
+  .chk span{font-size:13.5px;line-height:1.5}
+  .champ{width:100%;padding:12px 14px;border-radius:11px;border:1px solid #DCE8F2;font-size:15px;font-family:inherit;color:#14265C;outline:none;background:#fff}
+  .champ:focus{border-color:#2F7DD1}
+  .hint{font-size:11.5px;color:#8A97B8;margin-top:6px;line-height:1.5}
+  .sigbox{position:relative;border:1.5px dashed #B9D6F0;border-radius:12px;background:#fff;overflow:hidden;touch-action:none}
+  .sigbox canvas{display:block;width:100%;height:180px}
+  .sigph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#AEB9CC;pointer-events:none}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  button{font-family:inherit;border:0;border-radius:12px;cursor:pointer;font-weight:800}
+  .b-neutre{background:#EDF4F9;color:#14265C;padding:12px 18px;font-size:13.5px}
+  .b-vert{background:#1F8A5B;color:#fff;padding:15px 20px;font-size:15px;width:100%}
+  .b-vert[disabled]{background:#C3CCDE;cursor:not-allowed}
+  .b-bleu{background:#2F7DD1;color:#fff;padding:14px 20px;font-size:14.5px;width:100%}
+  .msg{margin-top:12px;font-size:13px;font-weight:700;line-height:1.5;white-space:pre-line}
+  .err{color:#C2362F}
+  .ok{color:#1F7A4D}
+  .centre{text-align:center;padding:52px 24px}
+  .centre .em{font-size:42px}
+  .pied{text-align:center;font-size:11.5px;color:#8A97B8;line-height:1.6;padding:6px 20px 0}
+  @media (max-width:520px){.box,.doc{margin:12px}.t{font-size:16.5px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="logo-mail.png" alt="">
+    <div>
+      <div class="n">BlueWavea</div>
+      <div class="s">Eau pure maîtrisée</div>
+    </div>
+  </header>
+
+  <div id="ecran"><div class="centre"><div class="em">⏳</div><div class="st" style="margin-top:10px">Chargement de votre document…</div></div></div>
+
+  <div class="pied">BlueWavea · 4 place des Condamines · 69480 Anse<br>contact@bluewavea.fr · 06 50 37 89 30 · bluewavea.fr</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function () {
+  var URL_SB = 'https://tmxkgxehlvrzjrbxqrpl.supabase.co';
+  var KEY_SB = 'sb_publishable_2igJPclD1o50Y-r8uI5Ebw_JMEvAlk-';
+  var cl = window.supabase.createClient(URL_SB, KEY_SB);
+  var ecran = document.getElementById('ecran');
+  var jeton = new URLSearchParams(location.search).get('s') || '';
+  var demande = null;
+
+  function html(s) { ecran.innerHTML = s; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+  function erreur(t, d) {
+    html('<div class="centre"><div class="em">⚠️</div><div class="t" style="margin-top:12px">' + esc(t) + '</div><div class="st">' + esc(d || '') + '</div></div>');
+  }
+
+  /* Le document est affiché dans un cadre isolé, à sa hauteur réelle. */
+  function poserDocument(source) {
+    var f = document.getElementById('cadre');
+    if (!f) return;
+    f.srcdoc = source;
+    f.onload = function () {
+      try {
+        var d = f.contentDocument;
+        d.documentElement.style.overflow = 'hidden';
+        var h = Math.max(d.documentElement.scrollHeight || 0, (d.body && d.body.scrollHeight) || 0);
+        f.style.height = (h > 200 ? h : 200) + 'px';
+      } catch (e) { f.style.height = '1400px'; }
+    };
+  }
+
+  /* Zone de signature au doigt ou à la souris. */
+  function signature(cv) {
+    var ctx = cv.getContext('2d');
+    var trace = false, vide = true;
+    function taille() {
+      var r = cv.getBoundingClientRect();
+      var dpr = window.devicePixelRatio || 1;
+      var img = vide ? null : cv.toDataURL();
+      cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#14265C';
+      if (img) { var i = new Image(); i.onload = function () { ctx.drawImage(i, 0, 0, r.width, r.height); }; i.src = img; }
+    }
+    taille();
+    window.addEventListener('resize', taille);
+    function pos(e) {
+      var r = cv.getBoundingClientRect();
+      var p = e.touches ? e.touches[0] : e;
+      return { x: p.clientX - r.left, y: p.clientY - r.top };
+    }
+    function deb(e) { e.preventDefault(); trace = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+    function mv(e) { if (!trace) return; e.preventDefault(); var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); vide = false; maj(); }
+    function fin() { trace = false; }
+    cv.addEventListener('mousedown', deb); cv.addEventListener('mousemove', mv);
+    window.addEventListener('mouseup', fin);
+    cv.addEventListener('touchstart', deb, { passive: false });
+    cv.addEventListener('touchmove', mv, { passive: false });
+    cv.addEventListener('touchend', fin);
+    return {
+      estVide: function () { return vide; },
+      effacer: function () { ctx.clearRect(0, 0, cv.width, cv.height); vide = true; maj(); },
+      image: function () { return vide ? '' : cv.toDataURL('image/png'); },
+    };
+  }
+
+  var sig = null;
+  function maj() {
+    var b = document.getElementById('valider');
+    if (!b) return;
+    var lu = document.getElementById('lu');
+    var m = document.getElementById('mention');
+    var ph = document.getElementById('sigph');
+    if (ph) ph.style.display = (sig && !sig.estVide()) ? 'none' : 'flex';
+    var mentionOk = m && m.value.trim().toLowerCase().replace(/\s+/g, ' ').indexOf('lu et approuv') === 0;
+    b.disabled = !(lu && lu.checked && mentionOk && sig && !sig.estVide());
+  }
+
+  /* Document signé : le cadre du document, augmenté du bloc de signature. */
+  function documentSigne(d) {
+    var bloc = '<div style="margin:18px 24px 26px;padding:16px 18px;border:1px solid #C9E6D5;background:#F4FBF6;border-radius:12px;font-family:system-ui,sans-serif">'
+      + '<div style="font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#1F8A5B;margin-bottom:10px">✍️ Signature électronique du client</div>'
+      + '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">'
+      + '<img src="' + d.signatureImg + '" alt="Signature" style="height:70px;max-width:230px;object-fit:contain;background:#fff;border:1px solid #C9E6D5;border-radius:8px;padding:4px">'
+      + '<div style="font-size:12.5px;color:#14265C;line-height:1.6">'
+      + '<div style="font-style:italic">« ' + esc(d.mention) + ' »</div>'
+      + '<div><b>' + esc(d.clientNom) + '</b></div>'
+      + '<div style="color:#5B6B94">Signé le ' + esc(d.signeLeFr) + '</div>'
+      + '<div style="color:#8A97B8;font-size:11px">Signature électronique — BlueWavea · référence ' + esc(d.id) + '</div>'
+      + '</div></div></div>';
+    return String(d.html).replace(/<\/body>/i, bloc + '</body>');
+  }
+
+  /* PDF du document signé, pour l'enregistrement par le client et la pièce jointe. */
+  function enPdf(source) {
+    return new Promise(function (res) {
+      var h = document.createElement('iframe');
+      h.style.cssText = 'position:fixed;left:-10000px;top:0;width:820px;height:1200px;border:0';
+      document.body.appendChild(h);
+      h.srcdoc = source;
+      h.onload = function () {
+        setTimeout(function () {
+          var d = h.contentDocument;
+          html2canvas(d.body, { scale: 2, backgroundColor: '#ffffff', useCORS: true, windowWidth: 820 })
+            .then(function (cv) {
+              var pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+              var lp = 210, hp = 297, hi = (cv.height * lp) / cv.width;
+              var img = cv.toDataURL('image/jpeg', 0.9);
+              var reste = hi, y = 0;
+              pdf.addImage(img, 'JPEG', 0, 0, lp, hi);
+              reste -= hp;
+              while (reste > 0) { y -= hp; pdf.addPage(); pdf.addImage(img, 'JPEG', 0, y, lp, hi); reste -= hp; }
+              h.remove();
+              res(pdf);
+            }, function () { h.remove(); res(null); });
+        }, 400);
+      };
+    });
+  }
+
+  function ecranSigne(d, source) {
+    html('<div class="box"><div class="centre" style="padding:24px 8px">'
+      + '<div class="em">✅</div>'
+      + '<div class="t" style="margin-top:12px">Document signé</div>'
+      + '<div class="st">Merci ' + esc(d.clientNom) + '. Votre ' + esc(d.type === 'devis' ? 'devis' : 'contrat') + ' est signé le ' + esc(d.signeLeFr) + '.<br>Un exemplaire vous a été envoyé par e-mail.</div>'
+      + '</div>'
+      + '<button class="b-bleu" id="dl">⬇️ Enregistrer mon document signé (PDF)</button>'
+      + '<div class="hint" style="text-align:center">Conservez-le : il fait foi entre vous et BlueWavea.</div>'
+      + '</div>'
+      + '<div class="doc"><iframe id="cadre" title="Document signé"></iframe></div>');
+    poserDocument(source);
+    document.getElementById('dl').onclick = function () {
+      var b = this; b.textContent = 'Préparation du PDF…'; b.disabled = true;
+      enPdf(source).then(function (pdf) {
+        b.disabled = false; b.textContent = '⬇️ Enregistrer mon document signé (PDF)';
+        if (!pdf) { alert("Le PDF n'a pas pu être préparé. Utilisez l'impression de votre navigateur."); return; }
+        pdf.save((d.type === 'devis' ? 'Devis' : 'Contrat') + '_BlueWavea_signe.pdf');
+      });
+    };
+  }
+
+  function ecranSignature(d) {
+    html('<div class="box">'
+      + '<div class="t">' + esc(d.titre) + '</div>'
+      + '<div class="st">Bonjour ' + esc(d.clientNom) + '. Lisez le document ci-dessous, puis signez-le en bas de page. Vous pourrez ensuite l\'enregistrer.</div>'
+      + '</div>'
+      + '<div class="doc"><iframe id="cadre" title="Document à signer"></iframe></div>'
+      + '<div class="box">'
+      + '<div class="lab">Votre accord</div>'
+      + '<label class="chk"><input type="checkbox" id="lu"><span>J\'ai lu l\'intégralité du document et j\'en accepte les termes.</span></label>'
+      + '<div style="margin-top:16px"><div class="lab">Mention manuscrite</div>'
+      + '<input class="champ" id="mention" placeholder="Lu et approuvé" autocomplete="off">'
+      + '<div class="hint">Recopiez exactement : <b>Lu et approuvé</b>' + (d.type === 'devis' ? ' — ou <b>Lu et approuvé, bon pour accord</b>' : '') + '</div></div>'
+      + '<div style="margin-top:16px"><div class="lab">Votre signature</div>'
+      + '<div class="sigbox"><canvas id="cv"></canvas><div class="sigph" id="sigph">Signez ici avec le doigt ou la souris</div></div>'
+      + '<div class="row" style="margin-top:9px"><button class="b-neutre" id="eff">↺ Effacer</button></div></div>'
+      + '<div style="margin-top:18px"><button class="b-vert" id="valider" disabled>✓ Signer le document</button></div>'
+      + '<div class="msg" id="msg"></div>'
+      + '<div class="hint" style="margin-top:12px">Signature électronique simple. La date, l\'heure et l\'appareil utilisé sont enregistrés comme preuve de votre accord.</div>'
+      + '</div>');
+    poserDocument(d.html);
+    sig = signature(document.getElementById('cv'));
+    document.getElementById('eff').onclick = function () { sig.effacer(); };
+    document.getElementById('lu').onchange = maj;
+    document.getElementById('mention').oninput = maj;
+    maj();
+    document.getElementById('valider').onclick = function () { valider(d); };
+  }
+
+  function valider(d) {
+    var b = document.getElementById('valider');
+    var msg = document.getElementById('msg');
+    b.disabled = true; b.textContent = 'Enregistrement…';
+    msg.className = 'msg'; msg.textContent = '';
+    var now = new Date();
+    var p2 = function (n) { return String(n).padStart(2, '0'); };
+    var signe = Object.assign({}, d, {
+      mention: document.getElementById('mention').value.trim(),
+      signatureImg: sig.image(),
+      signeLe: now.toISOString(),
+      signeLeFr: p2(now.getDate()) + '/' + p2(now.getMonth() + 1) + '/' + now.getFullYear() + ' à ' + p2(now.getHours()) + ':' + p2(now.getMinutes()),
+      agent: navigator.userAgent.slice(0, 200),
+    });
+    var source = documentSigne(signe);
+
+    cl.from('signatures').upsert([{ id: d.id, data: Object.assign({}, signe, { htmlSigne: source }) }]).then(function (res) {
+      if (res.error) {
+        b.disabled = false; b.textContent = '✓ Signer le document';
+        msg.className = 'msg err';
+        msg.textContent = "L'enregistrement a échoué : " + res.error.message + "\nRéessayez, ou prévenez BlueWavea au 06 50 37 89 30.";
+        return;
+      }
+      ecranSigne(signe, source);
+      /* exemplaire par courrier : le client le reçoit sans rien faire */
+      enPdf(source).then(function (pdf) {
+        if (!pdf) return;
+        var b64 = pdf.output('datauristring').split(',')[1];
+        fetch(URL_SB + '/functions/v1/bluewavea-gmail', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', apikey: KEY_SB, authorization: 'Bearer ' + KEY_SB },
+          body: JSON.stringify({
+            action: 'envoi-document',
+            to: d.clientEmail, toName: d.clientNom,
+            subject: 'Votre ' + (d.type === 'devis' ? 'devis' : 'contrat') + ' BlueWavea — signé',
+            text: 'Bonjour ' + d.clientNom + ',\n\nVotre ' + (d.type === 'devis' ? 'devis' : 'contrat')
+              + ' a bien été signé le ' + signe.signeLeFr + '.\n\nVous en trouverez l\'exemplaire signé en pièce jointe : conservez-le.\n\n'
+              + 'BlueWavea\nEau pure maîtrisée\n4 place des Condamines\n69480 Anse\ncontact@bluewavea.fr · 06 50 37 89 30\nbluewavea.fr\nSIREN 892 317 496',
+            fichier: { name: (d.type === 'devis' ? 'Devis' : 'Contrat') + '_BlueWavea_signe.pdf', content: b64 },
+          }),
+        }).catch(function () {});
+      });
+    });
+  }
+
+  if (!jeton) { erreur('Lien incomplet', 'Ouvrez le lien exactement tel qu’il figure dans votre e-mail.'); return; }
+
+  cl.from('signatures').select('data').eq('id', jeton).then(function (res) {
+    var d = res && res.data && res.data[0] && res.data[0].data;
+    if (!d || d._deleted) { erreur('Document introuvable', 'Ce lien n’est plus valable. Contactez BlueWavea au 06 50 37 89 30.'); return; }
+    demande = d;
+    if (d.signeLe) { ecranSigne(d, d.htmlSigne || documentSigne(d)); return; }
+    if (d.refuseLe) { erreur('Document refusé', 'Vous avez refusé ce document le ' + (d.refuseLe || '') + '.'); return; }
+    ecranSignature(d);
+    /* première ouverture : suivi côté BlueWavea */
+    if (!d.ouvertLe) {
+      cl.from('signatures').upsert([{ id: d.id, data: Object.assign({}, d, { ouvertLe: new Date().toISOString() }) }]).then(function () {}, function () {});
+    }
+  }, function (e) {
+    erreur('Service momentanément indisponible', String((e && e.message) || e));
+  });
+})();
+</script>
+</body>
+</html>
