@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /signer.html
+
+Sitemap: https://bluewavea.fr/sitemap.xml
