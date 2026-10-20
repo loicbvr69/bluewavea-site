@@ -139,7 +139,7 @@
     var m = document.getElementById('mention');
     var ph = document.getElementById('sigph');
     if (ph) ph.style.display = (sig && !sig.estVide()) ? 'none' : 'flex';
-    var mentionOk = m && m.value.trim().toLowerCase().replace(/\s+/g, ' ').indexOf('lu et approuv') === 0;
+    var mentionOk = m && m.value.trim().toLowerCase().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').indexOf('bon pour accord') === 0;
     b.disabled = !(lu && lu.checked && mentionOk && sig && !sig.estVide());
   }
 
@@ -216,8 +216,8 @@
       + '<div class="lab">Votre accord</div>'
       + '<label class="chk"><input type="checkbox" id="lu"><span>J\'ai lu l\'intégralité du document et j\'en accepte les termes.</span></label>'
       + '<div style="margin-top:16px"><div class="lab">Mention manuscrite</div>'
-      + '<input class="champ" id="mention" placeholder="Lu et approuvé" autocomplete="off">'
-      + '<div class="hint">Recopiez exactement : <b>Lu et approuvé</b>' + (d.type === 'devis' ? ' — ou <b>Lu et approuvé, bon pour accord</b>' : '') + '</div></div>'
+      + '<input class="champ" id="mention" placeholder="Bon pour accord" autocomplete="off">'
+      + '<div class="hint">Recopiez exactement : <b>Bon pour accord</b></div></div>'
       + '<div style="margin-top:16px"><div class="lab">Votre signature</div>'
       + '<div class="sigbox"><canvas id="cv"></canvas><div class="sigph" id="sigph">Signez ici avec le doigt ou la souris</div></div>'
       + '<div class="row" style="margin-top:9px"><button class="b-neutre" id="eff">↺ Effacer</button></div></div>'
