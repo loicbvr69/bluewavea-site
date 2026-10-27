@@ -281,8 +281,13 @@
 
   if (!jeton) { erreur('Lien incomplet', 'Ouvrez le lien exactement tel qu’il figure dans votre e-mail.'); return; }
 
+  /* (27/10/2026) cloud qui ne répond pas : jamais « Document introuvable », le lien reste valable */
+  var indispo = function () {
+    erreur('Service momentanément indisponible', 'Merci de réessayer dans quelques minutes. Si le problème persiste, contactez BlueWavea au 06 50 37 89 30.');
+  };
   cl.from('signatures').select('data').eq('id', jeton).then(function (res) {
-    var d = res && res.data && res.data[0] && res.data[0].data;
+    if (!res || res.error) { indispo(); return; }
+    var d = res.data && res.data[0] && res.data[0].data;
     if (!d || d._deleted) { erreur('Document introuvable', 'Ce lien n’est plus valable. Contactez BlueWavea au 06 50 37 89 30.'); return; }
     demande = d;
     if (d.signeLe) { ecranSigne(d, d.htmlSigne || documentSigne(d)); return; }
@@ -292,9 +297,7 @@
     if (!d.ouvertLe) {
       cl.from('signatures').upsert([{ id: d.id, data: Object.assign({}, d, { ouvertLe: new Date().toISOString() }) }]).then(function () {}, function () {});
     }
-  }, function (e) {
-    erreur('Service momentanément indisponible', String((e && e.message) || e));
-  });
+  }, function () { indispo(); });
 })();
 </script>
 </body>
