@@ -99,7 +99,39 @@
   /* Zone de signature au doigt ou à la souris. */
   function signature(cv) {
     var ctx = cv.getContext('2d');
-    var trace = false, vide = true;
+    /* (23/11/2026) Règle de Loïc : « pour que la signature soit valide, le client ne doit pas faire de point, un simple
+       toucher non plus, pas de croix ». Une signature n'est acceptée que si le tracé ressemble à une vraie signature :
+       - assez long (≥ 180 px au total) et assez grand (≥ 70 px de large, ≥ 18 px de haut) ;
+       - pas uniquement des traits droits (un trait, une croix « X » ou « + », une barre = refusés) ;
+       - assez de changements de direction (≥ 6), comme une écriture.
+       Sinon : bouton grisé, message, aucun envoi. */
+    var trace = false, vide = true, traits = [], courant = null;
+    function analyse() {
+      var long = 0, mnX = 1e9, mxX = -1e9, mnY = 1e9, mxY = -1e9, tous = 0, droits = 0, virages = 0;
+      traits.forEach(function (t) {
+        if (t.length < 2) return;
+        tous++;
+        var l = 0, sx = 0, sy = 0;
+        for (var i = 1; i < t.length; i++) {
+          var dx = t[i].x - t[i - 1].x, dy = t[i].y - t[i - 1].y, d = Math.hypot(dx, dy);
+          if (d < 1.5) continue;
+          l += d;
+          var nx = dx > 0.5 ? 1 : (dx < -0.5 ? -1 : 0), ny = dy > 0.5 ? 1 : (dy < -0.5 ? -1 : 0);
+          if (nx && sx && nx !== sx) virages++; if (ny && sy && ny !== sy) virages++;
+          if (nx) sx = nx; if (ny) sy = ny;
+        }
+        t.forEach(function (p) { if (p.x < mnX) mnX = p.x; if (p.x > mxX) mxX = p.x; if (p.y < mnY) mnY = p.y; if (p.y > mxY) mxY = p.y; });
+        long += l;
+        var corde = Math.hypot(t[t.length - 1].x - t[0].x, t[t.length - 1].y - t[0].y);
+        if (l > 0 && corde / l > 0.88) droits++;
+      });
+      if (!tous || long < 1) return 'vide';
+      if (long < 180 || (mxX - mnX) < 70 || (mxY - mnY) < 18) return 'courte';
+      if (droits === tous) return 'traits';
+      if (virages < 6) return 'simple';
+      return '';
+    }
+    function assez() { return analyse() === ''; }
     function taille() {
       var r = cv.getBoundingClientRect();
       var dpr = window.devicePixelRatio || 1;
@@ -116,18 +148,20 @@
       var p = e.touches ? e.touches[0] : e;
       return { x: p.clientX - r.left, y: p.clientY - r.top };
     }
-    function deb(e) { e.preventDefault(); trace = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
-    function mv(e) { if (!trace) return; e.preventDefault(); var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); vide = false; maj(); }
-    function fin() { trace = false; }
+    function deb(e) { e.preventDefault(); trace = true; var p = pos(e); courant = [p]; traits.push(courant); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+    function mv(e) { if (!trace) return; e.preventDefault(); var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); if (courant) courant.push(p); vide = false; maj(); }
+    function fin() { if (trace) { trace = false; maj(); } }
     cv.addEventListener('mousedown', deb); cv.addEventListener('mousemove', mv);
     window.addEventListener('mouseup', fin);
     cv.addEventListener('touchstart', deb, { passive: false });
     cv.addEventListener('touchmove', mv, { passive: false });
     cv.addEventListener('touchend', fin);
     return {
-      estVide: function () { return vide; },
-      effacer: function () { ctx.clearRect(0, 0, cv.width, cv.height); vide = true; maj(); },
-      image: function () { return vide ? '' : cv.toDataURL('image/png'); },
+      estVide: function () { return vide || !assez(); },
+      tropCourte: function () { return !vide && !assez(); },
+      raison: function () { return vide ? 'vide' : analyse(); },
+      effacer: function () { ctx.clearRect(0, 0, cv.width, cv.height); vide = true; traits = []; courant = null; maj(); },
+      image: function () { return (vide || !assez()) ? '' : cv.toDataURL('image/png'); },
     };
   }
 
@@ -138,7 +172,14 @@
     var lu = document.getElementById('lu');
     var m = document.getElementById('mention');
     var ph = document.getElementById('sigph');
-    if (ph) ph.style.display = (sig && !sig.estVide()) ? 'none' : 'flex';
+    if (ph) ph.style.display = (sig && (!sig.estVide() || sig.tropCourte())) ? 'none' : 'flex';
+    var court = document.getElementById('sigcourt');
+    if (!court && sig && document.getElementById('cv')) { court = document.createElement('div'); court.id = 'sigcourt'; court.style.cssText = 'display:none;margin-top:6px;font-size:13px;font-weight:700;color:#C2362F'; court.textContent = ''; var bx = document.getElementById('cv').parentElement; bx.parentElement.insertBefore(court, bx.nextSibling); }
+    if (court) { var rz = sig ? sig.raison() : 'vide';
+      court.textContent = rz === 'traits' ? 'Signature non valable : un trait ou une croix ne suffisent pas. Effacez et signez comme sur un papier (votre nom ou votre paraphe).'
+        : rz === 'simple' ? 'Signature non valable : tracé trop simple. Effacez et signez comme sur un papier (votre nom ou votre paraphe).'
+        : 'Signature non valable : un point ou un simple toucher ne suffisent pas. Effacez et signez comme sur un papier (votre nom ou votre paraphe).';
+      court.style.display = (sig && sig.tropCourte()) ? 'block' : 'none'; }
     var mentionOk = m && m.value.trim().toLowerCase().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').indexOf('bon pour accord') === 0;
     b.disabled = !(lu && lu.checked && mentionOk && sig && !sig.estVide());
   }
@@ -237,6 +278,7 @@
   function valider(d) {
     var b = document.getElementById('valider');
     var msg = document.getElementById('msg');
+    if (!sig || sig.estVide()) { maj(); return; } /* jamais d'envoi sans vraie signature */
     b.disabled = true; b.textContent = 'Enregistrement…';
     msg.className = 'msg'; msg.textContent = '';
     var now = new Date();
